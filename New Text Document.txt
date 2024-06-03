@@ -1,0 +1,5 @@
+https://www.kaggle.com/code/sergiosaharovskiy/home-credit-crms-2024-eda-and-submission/notebook
+extremely unbalanced in the target column: i have try to add weight_class = 'balanced' but the result is worse than normal
+in this https://www.kaggle.com/code/c3152023/credit-risk-prediction-with-lightgbm-and-catboost?scriptVersionId=177723939
+i use a custom metric base on one post on Kaggle but the result is worse than the auc
+metric hack still work in private test but feature selection is also important
