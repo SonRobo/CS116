@@ -1,18 +1,28 @@
 # CS116 Technical Report
 
+## Team members
+
+- **Bùi Hồng Sơn** - 22521246
+- **Đồng Minh Quân** - 22521176
+- **Nguyễn Minh Sơn** - 22521254
+
 ## Introduction
 
-The objective of the competition hosted on Kaggle Home Credit, is to develop a predictive model that can accurately determine the likelihood of clients defaulting on their loans. The evaluation criteria for this competition are designed to favor solutions that demonstrate stability over time.
+The objective of the competition hosted on Kaggle [Home Credit](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability), is to develop a predictive model that can accurately determine the likelihood of clients defaulting on their loans. The evaluation criteria for this competition are designed to favor solutions that demonstrate stability over time.
 
 ## Data and Feature Engineering
 
-### Data
+### Data Overview
 
-Our team divided the task of reading through the feature definitions to extract valuable insights. We aggregated data based on this baseline notebook: [Home Credit Baseline](https://www.kaggle.com/code/greysky/home-credit-baseline). Our analysis led us to several key findings:
+Our team divided the task of reading through the feature definitions to extract valuable insights but because of the lack understanding about finance we don't get much values from it.
+
+We overview the data and make some plot. Our analysis led us to several key findings:
 
 1. The distribution of the target column is heavily unbalanced, with 97% of the values being 0.
 2. The COVID-19 pandemic appears to have significantly affected the number of observations.
 3. Some columns have a high percentage of null values.
+
+We aggregated data based on this baseline notebook: [Home Credit Baseline](https://www.kaggle.com/code/greysky/home-credit-baseline).
 
 ### Feature Engineering
 
@@ -20,7 +30,11 @@ Unfortunately, we did not allocate enough time to this critical step. Our featur
 
 ## Feature Selection
 
-We implemented a ridge regression to identify the most significant features. Here is the code we used for this process:
+We implemented a ridge regression to identify the most significant features. In addition to the Ridge regression, we also used the LightGBM model to identify the most significant features.
+
+### Ridge Regression
+
+We used the following approach for ridge regression:
 
 ```python
 X = df_train.drop(columns=["target", "case_id"])
@@ -64,7 +78,9 @@ top_features = features_df.nlargest(300, 'abs_coef')
 top_feature_names = top_features['features'].values
 ```
 
-In addition to the Ridge regression, we also used the LightGBM model to identify the most significant features. Here is the code we used for this process:
+### LightGBM
+
+We used the following approach for LightGBM:
 
 ```python
 from lightgbm import LGBMClassifier
@@ -90,7 +106,7 @@ df_feature_importances = df_feature_importances.sort_values('Importance', ascend
 
 top_features = df_feature_importances['Feature'].head(300)
 
-``` 
+```
 
 ## Model
 
@@ -100,9 +116,72 @@ Our team copied this notebook and tried to improve it: [Credit Risk Prediction w
 
 The competition has its own unique metric for evaluating submissions. Therefore, we decided to create and use a custom metric instead of the standard AUC. We referred to this notebook for this purpose: [Home Credit Credit Risk Model Stability Discussion](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/discussion/500868).
 
+```python
+def gini_stability_custom_metric(y_pred, y_true, week):
+
+   '''
+   :param y_pred:
+   :param y_true:
+   :param week:
+   :return eval_name: str
+   :return eval_result: float
+   :return is_higher_better: bool
+   '''
+
+   w_fallingrate = 88.0
+   w_resstd = -0.5
+
+   base = pd.DataFrame()
+   base['WEEK_NUM'] = week
+   base['target'] = y_true
+   base['score'] = y_pred
+   gini_in_time = base.loc[:, ["WEEK_NUM", "target", "score"]]\
+       .sort_values("WEEK_NUM")\
+       .groupby("WEEK_NUM")[["target", "score"]]\
+       .apply(lambda x: 2*roc_auc_score(x["target"], x["score"])-1 if len(np.unique(x["target"])) > 1 else 0).tolist()
+
+   x = np.arange(len(gini_in_time))
+   y = gini_in_time
+   a, b = np.polyfit(x, y, 1)
+   y_hat = a*x + b
+   residuals = y - y_hat
+   res_std = np.std(residuals)
+   avg_gini = np.mean(gini_in_time)
+
+   final_score = avg_gini + w_fallingrate * min(0, a) + w_resstd * res_std
+
+   return 'gini_stability', final_score, True
+
+```
+
 ## Metric Hack
 
 We saw a discussion about this problem and decided to give it a try. It improved our score on the public test but did not significantly impact on the private set.
+
+### Explaination
+
+The evaluation metric involves calculating a Gini score for each week, fitting a linear regression through these scores, and penalizing models with decreasing Gini scores over time (negative slope). The standard deviation of the residuals from the regression is also penalized.
+
+A condition is established based on the week number, and the score is reduced by 0.02 (and clipped at 0 to ensure the scores remain within valid bounds). This strategy aims to enhance the stability of the model’s predictions over time by lowering the scores in the earlier weeks. The hope is that this will result in a smaller standard deviation, thereby reducing the penalty score.
+
+```python
+X_test: pd.DataFrame = df_test.set_index("case_id")
+X_test[cat_cols] = X_test[cat_cols].astype("category")
+
+y_pred: pd.Series = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)
+
+df_subm["score"] = y_pred
+df_subm["WEEK_NUM"] = df_test.set_index("case_id")["week_num"]
+
+display(df_subm)
+
+condition = df_subm["WEEK_NUM"] < (df_subm["WEEK_NUM"].max() - df_subm["WEEK_NUM"].min())/2 + df_subm["WEEK_NUM"].min()
+df_subm.loc[condition, 'score'] = (df_subm.loc[condition, 'score'] - 0.02).clip(0)
+
+df_subm = df_subm.drop(columns=["WEEK_NUM"])
+
+df_subm.to_csv("submission.csv")
+```
 
 ## What Didn't Work
 
@@ -115,3 +194,4 @@ We saw a discussion about this problem and decided to give it a try. It improved
 
 While we achieved some improvements, our overall approach faced several challenges, particularly with handling the large dataset and optimizing feature engineering. Future efforts should focus on more robust feature selection and feature engineering to enhance model performance.
 
+The highest notebook score we have is about 0.513. Then a notebook [This is the way](https://www.kaggle.com/code/tritionalval/this-is-the-way) appear and we have try to improve the score but it stay the same. Finally we got 0.51507 fromm that notebook.
