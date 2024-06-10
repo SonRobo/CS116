@@ -5,6 +5,7 @@
 - **Bùi Hồng Sơn** - 22521246
 - **Đồng Minh Quân** - 22521176
 - **Nguyễn Minh Sơn** - 22521254
+- **Nguyễn Hữu Nam** - 22520917
 
 ## Introduction
 
