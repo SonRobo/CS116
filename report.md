@@ -14,6 +14,8 @@ The objective of the competition hosted on Kaggle [Home Credit](https://www.kagg
 
 ### Data Overview
 
+Reference notebook: [[Home Credit CRMS, 2024] EDA and Submission](https://www.kaggle.com/code/sergiosaharovskiy/home-credit-crms-2024-eda-and-submission/notebook)
+
 Our team divided the task of reading through the feature definitions to extract valuable insights but because of the lack understanding about finance we don't get much values from it.
 
 We overview the data and make some plot. Our analysis led us to several key findings:
@@ -186,7 +188,7 @@ df_subm.to_csv("submission.csv")
 ## What Didn't Work
 
 1. Adding `class_weight='balanced'` resulted in a decrease in the score.
-2. Using a custom metric instead of AUC.
+2. Using a custom metric instead of AUC(turns out it didn't work on the public test but the private test is better).
 3. Using 300 most important features based on ridge regression and LightGBM.
 4. Filtering null values with a threshold of 0.98, which gave us more than 100 new features but failed due to OOM issues.
 
@@ -194,4 +196,6 @@ df_subm.to_csv("submission.csv")
 
 While we achieved some improvements, our overall approach faced several challenges, particularly with handling the large dataset and optimizing feature engineering. Future efforts should focus on more robust feature selection and feature engineering to enhance model performance.
 
-The highest notebook score we have is about 0.513. Then a notebook [This is the way](https://www.kaggle.com/code/tritionalval/this-is-the-way) appear and we have try to improve the score but it stay the same. Finally we got 0.51507 fromm that notebook.
+The highest notebook private score we have is 0.51514. Then a notebook [This is the way](https://www.kaggle.com/code/tritionalval/this-is-the-way) appear and we have try to improve the score but it stay the same. Finally we got 0.51507 fromm that notebook.
+
+We saw this notebook [VotingClassifier Home Credit](https://www.kaggle.com/code/jonathanchan/votingclassifier-home-credit/notebook) several days before the competition end but we forgot to submit it. After the competition is ended we submit that notebook and get 0.51601. Which is the best score.
